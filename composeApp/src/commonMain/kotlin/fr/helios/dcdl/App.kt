@@ -1,65 +1,78 @@
 package fr.helios.dcdl
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import fr.helios.dcdl.dashboard.DashboardScreen
 import org.jetbrains.compose.ui.tooling.preview.Preview
-
-import fr.helios.dcdl.network.ApiClient
-import io.ktor.client.request.get
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
-import kotlinx.coroutines.launch
+import fr.helios.dcdl.game.GameScreen
+import fr.helios.dcdl.home.HomeScreen
+import fr.helios.dcdl.navigation.AppRoutes
 
 @Composable
 @Preview
-fun App() {
+fun App(
+    onNavHostReady: suspend (NavHostController) -> Unit = {}
+) {
+    val navController = rememberNavController()
+
     MaterialTheme {
-        val coroutineScope = rememberCoroutineScope()
-
-        var responseTestApi by remember { mutableStateOf("waiting...") }
-
-        LaunchedEffect(Unit) {
-            coroutineScope.launch {
-                try {
-                    val httpResponse: HttpResponse = ApiClient.client.get("api/hello")
-                    println("Success: ${httpResponse.bodyAsText()}")
-                    responseTestApi = httpResponse.bodyAsText()
-                } catch (e: Exception) {
-                    responseTestApi = "Erreur: ${e.message}"
-                }
-            }
-        }
-
-        val textFiledState = rememberTextFieldState()
-
-        Column(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .safeContentPadding()
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+        NavHost(
+            navController = navController,
+            startDestination = AppRoutes.Home.route,
+            modifier = Modifier.fillMaxSize()
         ) {
-            Text("game ID:")
+            composable(
+                route = AppRoutes.Home.route
+            ) {
+                HomeScreen(
+                    navigateToDashboard = { gameId ->
+                        navController.navigate(
+                            AppRoutes.Dashboard.createRoute(gameId)
+                        )
+                    },
+                    navigateToGame = { gameId, username ->
+                        navController.navigate(
+                            AppRoutes.Game.createRoute(gameId = gameId, username = username)
+                        )
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
 
-            BasicTextField(
-                state = textFiledState
-            )
+            composable(
+                route = AppRoutes.Dashboard.route,
+                arguments = listOf(navArgument(AppRoutes.GAME_ID_ARG) { type = NavType.StringType })
+            ) { navBackStackEntry ->
+                val gameId: String = navBackStackEntry.savedStateHandle[AppRoutes.GAME_ID_ARG] ?: return@composable
+                DashboardScreen(gameId)
+            }
 
-            Button(onClick = {
-
-            }) {
-                Text("Join game !")
+            composable(
+                route = AppRoutes.Game.route,
+                arguments = listOf(
+                    navArgument(AppRoutes.GAME_ID_ARG) { type = NavType.StringType },
+                    navArgument(AppRoutes.USERNAME_ARG) { type = NavType.StringType }
+                )
+            ) { navBackStackEntry ->
+                val gameId: String = navBackStackEntry.savedStateHandle[AppRoutes.GAME_ID_ARG] ?: return@composable
+                val username: String = navBackStackEntry.savedStateHandle[AppRoutes.USERNAME_ARG] ?: return@composable
+                GameScreen(gameId = gameId, username = username)
             }
         }
+   }
+
+    //https://kotlinlang.org/docs/multiplatform/compose-navigation-routing.html
+    LaunchedEffect(navController) {
+        println("LAUNCH INVOKE BACK STACK")
+
+        onNavHostReady.invoke(navController)
     }
 }

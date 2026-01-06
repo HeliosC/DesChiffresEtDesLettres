@@ -3,8 +3,10 @@ package fr.helios.dcdl
 import fr.helios.dcdl.repository.GameRepository
 import fr.helios.dcdl.route.gameRoute
 import fr.helios.dcdl.service.GameService
+import fr.helios.dcdl.websocket.GameUpdateBroadcaster
+import fr.helios.dcdl.websocket.GameWebSocketHandler
 import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
+import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -13,8 +15,11 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.pingPeriod
+import io.ktor.server.websocket.timeout
 import kotlinx.serialization.json.Json
-import java.net.http.WebSocket
+import kotlin.time.Duration.Companion.seconds
 
 fun main() {
     embeddedServer(
@@ -26,11 +31,35 @@ fun main() {
 }
 
 fun Application.module() {
+    configureApi()
+    configureWebSockets()
+
+    //TODO: better option for circular dependencies??
+    val gameRepository = GameRepository()
+    val wsHandler = GameWebSocketHandler(
+        GameService(
+            gameRepository,
+            object : GameUpdateBroadcaster {
+                override suspend fun broadcastGameUpdate(gameId: String) { }
+            }
+        )
+    )
+    val gameService = GameService(gameRepository, wsHandler)
+    wsHandler.setGameService(gameService)
+
+    routing {
+        get("/") {
+            call.respondText("Ktor: ${Greeting().greet()}")
+        }
+
+        gameRoute(gameService)
+        wsHandler.webSocketRoutes(this)
+    }
+}
+
+fun Application.configureApi() {
     install(ContentNegotiation) {
-        json(Json {
-            prettyPrint = true
-            ignoreUnknownKeys = true
-        })
+        json(getJson())
     }
     install(CORS) {
         allowHost("0.0.0.0:8081")
@@ -41,17 +70,22 @@ fun Application.module() {
         allowHeader(HttpHeaders.ContentType)
         //allowHeader(HttpHeaders.Authorization)
     }
-    //install(WebSockets)
+}
 
-    val gameService = GameService(GameRepository())
-    //WS
+fun Application.configureWebSockets() {
+    install(WebSockets) {
+        contentConverter = KotlinxWebsocketSerializationConverter(getJson())
+        pingPeriod = 15.seconds
+        timeout = 15.seconds
+        maxFrameSize = Long.MAX_VALUE
+        masking = false
+    }
+}
 
-    routing {
-        get("/") {
-            call.respondText("Ktor: ${Greeting().greet()}")
-        }
-
-        gameRoute(gameService)
-        //ws
+private fun getJson(): Json {
+    return Json {
+        prettyPrint = true
+        isLenient = true
+        ignoreUnknownKeys = true
     }
 }
