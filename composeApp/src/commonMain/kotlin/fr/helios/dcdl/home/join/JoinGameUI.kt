@@ -1,6 +1,7 @@
 package fr.helios.dcdl.home.join
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -17,6 +18,8 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @Preview
 @Composable
 fun JoinGameUI(
+    joinGameIdState: TextFieldState,
+    joinUsernameState: TextFieldState,
     navigateToGame: (String, String) -> Unit,
     viewModel: JoinGameViewModel = viewModel { JoinGameViewModel() }
 ) {
@@ -25,13 +28,11 @@ fun JoinGameUI(
     Column {
         Text("Join a game")
 
-        val joinGameIdState = rememberTextFieldState()
         TextField(
             state = joinGameIdState,
             label = { Text("Game ID") }
         )
 
-        val joinUsernameState = rememberTextFieldState()
         TextField(
             state = joinUsernameState,
             label = { Text("Username") }

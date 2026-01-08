@@ -1,6 +1,7 @@
 package fr.helios.dcdl.home.create
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -17,6 +18,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @Preview
 @Composable
 fun CreateGameUI(
+    createGameIdState: TextFieldState,
     navigateToDashboard: (String) -> Unit,
     viewModel: CreateGameViewModel = viewModel { CreateGameViewModel() }
 ) {
@@ -25,7 +27,6 @@ fun CreateGameUI(
     Column {
         Text("Create a game")
 
-        val createGameIdState = rememberTextFieldState()
         TextField(
             state = createGameIdState,
             label = { Text("Game ID") }

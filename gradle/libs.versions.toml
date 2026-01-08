@@ -15,6 +15,7 @@ junit = "4.13.2"
 kotlin = "2.3.0"
 ktor = "3.3.3"
 logback = "1.5.23"
+materialAdaptative = "1.2.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -49,6 +50,7 @@ ktor-server-websockets = { module = "io.ktor:ktor-server-websockets", version.re
 ktor-serialization-kotlinx = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 androidx-navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "androidx-navigation" }
 
+material3-adaptative = { group = "org.jetbrains.compose.material3.adaptive", name = "adaptive", version.ref = "materialAdaptative" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
