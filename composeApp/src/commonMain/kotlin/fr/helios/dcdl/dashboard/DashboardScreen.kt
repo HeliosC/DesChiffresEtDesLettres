@@ -4,18 +4,26 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.window.core.layout.WindowSizeClass
+import fr.helios.dcdl.game.GameUiState
 import fr.helios.dcdl.game.GameViewModel
+import fr.helios.dcdl.game.PlayerRoundComponent
+import fr.helios.dcdl.game.PlayerScoresComponent
 import fr.helios.dcdl.game.numbers.NumberObjectiveComponent
 import fr.helios.dcdl.game.numbers.NumberTitleComponent
 import fr.helios.dcdl.model.GameRoundData
@@ -33,53 +41,75 @@ fun DashboardScreen(
     val gameUiState by gameViewModel.uiState.collectAsState()
     val dashboardUiState by dashboardViewModel.uiState.collectAsState()
 
-    Row {
-        Column {
-            Text("Tableau des scores")
-            gameUiState.players.forEach { (username, score) ->
-                Text("$username: $score")
+    Column(
+        modifier = Modifier
+            .verticalScroll(rememberScrollState())
+    ) {
+        Text("WELCOME IN THE DASHBOARD")
+        Text("Game: $gameId")
+
+        val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+
+        when {
+            windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND) -> {
+                Row {
+                    PlayerScoresComponent(gameUiState.players)
+                    Spacer(Modifier.width(64.dp))
+                    DashboardRoundComponent(dashboardUiState, gameUiState) { dashboardViewModel.startRound(it) }
+                }
+            }
+
+            else -> {
+                Column(modifier = Modifier) {
+                    PlayerScoresComponent(gameUiState.players)
+                    Spacer(Modifier.height(64.dp))
+                    DashboardRoundComponent(dashboardUiState, gameUiState) { dashboardViewModel.startRound(it) }
+                }
             }
         }
+    }
+}
 
-        Spacer(Modifier.width(64.dp))
-
-        Column(modifier = Modifier) {
-            Text("WELCOME IN THE DASHBOARD")
-            Text("Game: $gameId")
-
-            Button(
-                enabled = !dashboardUiState.isLoading,
-                onClick = {
-                    dashboardViewModel.startRound(GameRoundType.NUMBERS)
-                }
-            ) {
-                Text("Lancer Round Chiffres")
+@Composable
+fun DashboardRoundComponent(
+    dashboardUiState: DashboardUiState,
+    gameUiState: GameUiState,
+    startRound: (GameRoundType) -> Unit
+) {
+    Column(modifier = Modifier) {
+        Button(
+            enabled = !dashboardUiState.isLoading,
+            onClick = {
+                startRound(GameRoundType.NUMBERS)
             }
+        ) {
+            Text("Lancer Round Chiffres")
+        }
 
-            if (dashboardUiState.isLoading) {
-                CircularProgressIndicator()
-            }
-            dashboardUiState.error?.let { error ->
-                Text(": $error", color = MaterialTheme.colorScheme.error)
-            }
+        if (dashboardUiState.isLoading) {
+            CircularProgressIndicator()
+        }
+        dashboardUiState.error?.let { error ->
+            Text(": $error", color = MaterialTheme.colorScheme.error)
+        }
 
-            when (val round = gameUiState.currentRound?.data) {
-                is GameRoundData.Numbers -> {
-                    NumberObjectiveComponent(round.objective)
+        when (val round = gameUiState.currentRound?.data) {
+            is GameRoundData.Numbers -> {
+                NumberObjectiveComponent(round.objective)
 
-                    Row(Modifier.fillMaxWidth()) {
-                        round.tiles.forEach { tile ->
-                            NumberTitleComponent(
-                                modifier = Modifier.width(50.dp),
-                                value = tile,
-                                isUsed = false
-                            ) { }
-                        }
+                Row(Modifier.fillMaxWidth()) {
+                    round.tiles.forEach { tile ->
+                        NumberTitleComponent(
+                            modifier = Modifier.width(50.dp),
+                            value = tile,
+                            isUsed = false
+                        ) { }
                     }
                 }
-                is GameRoundData.Letters -> TODO()
-                null -> {}
             }
+
+            is GameRoundData.Letters -> TODO()
+            null -> {}
         }
     }
 }

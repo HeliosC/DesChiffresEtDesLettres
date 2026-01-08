@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
@@ -46,13 +47,13 @@ fun NumberRoundComponent(
     }
 
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(Modifier.align(Alignment.Start)) {
             NumberObjectiveComponent(roundData.objective)
         }
-        Row(Modifier.fillMaxWidth()) {
+        Row(Modifier) {
             numberUiState.initialTiles.withIndex().forEach { tile ->
                 NumberTitleComponent(
                     modifier = Modifier.width(50.dp),
@@ -63,7 +64,7 @@ fun NumberRoundComponent(
                 }
             }
         }
-        Row(Modifier.fillMaxWidth()) {
+        Row(Modifier) {
             NumbersOperator.entries.forEach { operator ->
                 NumberOperatorComponent(
                     modifier = Modifier.width(50.dp),
@@ -85,7 +86,7 @@ fun NumberRoundComponent(
 
         numberUiState.operations.withIndex().forEach { operation ->
             NumberOperationComponent(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.align(Alignment.Start).height(50.dp),
                 operation = operation.value,
                 isInteractive = isInteractive
             ) {
