@@ -44,7 +44,7 @@ object GameApi {
         onSessionEnded: (DefaultClientWebSocketSession) -> Unit,
         onUpdateReceived: (Game) -> Unit
     ) {
-        ApiClient.client.webSocket("/ws/games/$gameId") {
+        ApiClient.client.webSocket("${ApiClient.wsUrl}/ws/games/$gameId") {
             onSessionCreated.invoke(this)
 
             try {

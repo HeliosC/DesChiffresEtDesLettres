@@ -64,7 +64,7 @@ fun Application.configureApi() {
     install(CORS) {
         allowHost("0.0.0.0:8081")
         allowHost("localhost:8081")
-        //anyHost()
+        anyHost()
 
         //allowHeaders { true }
         allowHeader(HttpHeaders.ContentType)
