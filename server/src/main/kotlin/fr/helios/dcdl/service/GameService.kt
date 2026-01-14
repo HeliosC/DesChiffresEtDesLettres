@@ -7,6 +7,7 @@ import fr.helios.dcdl.model.GameState
 import fr.helios.dcdl.model.Player
 import fr.helios.dcdl.model.RoundAnswer
 import fr.helios.dcdl.repository.GameRepository
+import fr.helios.dcdl.util.LettersUtil
 import fr.helios.dcdl.util.NumberUtil
 import fr.helios.dcdl.websocket.GameUpdateBroadcaster
 import kotlinx.coroutines.CoroutineScope
@@ -83,13 +84,16 @@ class GameService(
             ?: return Result.failure(IllegalStateException("This game doesn't exists"))
 
         val newRound = when (roundType) {
-            GameRoundType.NUMBERS -> {
+            GameRoundType.NUMBERS ->
                 GameRound.Numbers(
                     startTime = System.currentTimeMillis(),
                     data = NumberUtil.generateRound()
                 )
-            }
-            GameRoundType.LETTERS -> TODO()
+            GameRoundType.LETTERS ->
+                GameRound.Letters(
+                    startTime = System.currentTimeMillis(),
+                    data = LettersUtil.generateRound()
+                )
         }
 
         val gameWithRound = game.copy(
@@ -118,7 +122,11 @@ class GameService(
                 game.players,
                 currentRound.answers
             )
-            is GameRound.Letters -> TODO()
+            is GameRound.Letters -> LettersUtil.updateScore(
+                currentRound.data,
+                game.players,
+                currentRound.answers
+            )
         }
 
         val updatedGame = game.copy(

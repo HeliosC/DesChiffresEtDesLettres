@@ -22,6 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.window.core.layout.WindowSizeClass
+import fr.helios.dcdl.game.letters.LettersRoundComponent
+import fr.helios.dcdl.game.letters.LettersRoundListener
+import fr.helios.dcdl.game.letters.LettersRoundUICustom
+import fr.helios.dcdl.game.letters.LettersRoundViewModel
 import fr.helios.dcdl.game.numbers.NumberRoundComponent
 import fr.helios.dcdl.game.numbers.NumberRoundListener
 import fr.helios.dcdl.game.numbers.NumberRoundViewModel
@@ -53,13 +57,14 @@ fun GameScreen(
     }
 
     val numberViewModel: NumberRoundViewModel = viewModel { NumberRoundViewModel() }
+    val lettersViewModel: LettersRoundViewModel = viewModel { LettersRoundViewModel() }
 
     LaunchedEffect(gameUiState.currentRound?.data) {
         answer = null
 
         when (val roundData = gameUiState.currentRound?.data) {
             is GameRoundData.Numbers -> numberViewModel.initWithRoundData(roundData)
-            is GameRoundData.Letters -> TODO()
+            is GameRoundData.Letters -> lettersViewModel.initWithRoundData(roundData)
             null -> {}
         }
     }
@@ -120,7 +125,18 @@ fun PlayerRoundComponent(
                 )
             }
 
-            is GameRoundData.Letters -> TODO()
+            is GameRoundData.Letters -> {
+                LettersRoundComponent(
+                    isInteractive = timer > 0,
+                    listener = object: LettersRoundListener {
+                        override fun onPlayerAnswerChanged(answer: String) {
+                            onAnswerChanged(RoundAnswer.Letters(answer))
+                        }
+                    }
+                )
+
+                //LettersRoundUICustom(currentRound.tiles)
+            }
 
             null -> {
                 Text("PAS DE ROUND EN COURS")

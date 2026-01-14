@@ -12,7 +12,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
 object ApiClient {
-    const val PROD_ENV: Boolean = true
+    const val PROD_ENV: Boolean = false
 
     //TODO: dynamic url for dev
     const val SEVER_URL_DOMAIN_PROD = "deschiffresetdeslettres-server.onrender.com"
