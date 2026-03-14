@@ -9,17 +9,41 @@ import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.serialization.json.Json
+import kotlin.concurrent.Volatile
 
-object ApiClient {
-    const val PROD_ENV: Boolean = true
+class ApiClient private constructor(private val host: String) {
 
-    //TODO: dynamic url for dev
-    const val SEVER_URL_DOMAIN_PROD = "deschiffresetdeslettres-server.onrender.com"
-    const val SEVER_URL_DOMAIN_TEST = "0.0.0.0:8080" // 10.0.2.2:8080 //for mobile emulator
+    companion object {
+        @Volatile
+        private var instance: ApiClient? = null
 
-    val httpUrl = if (PROD_ENV) "https://$SEVER_URL_DOMAIN_PROD" else "http://$SEVER_URL_DOMAIN_TEST"
-    val wsUrl = if (PROD_ENV) "wss://$SEVER_URL_DOMAIN_PROD" else "ws://$SEVER_URL_DOMAIN_TEST"
+        fun setInstance(host: String) =
+            instance ?: synchronized(this) {
+                instance ?: ApiClient(host).also { instance = it }
+            }
+
+        fun getInstance(): ApiClient? = instance
+
+        val client: HttpClient
+            get() = getInstance()?.client!! //TODO: dependency injection
+
+        const val PROD_ENV: Boolean = true
+
+        //TODO: dynamic url for dev
+        const val SEVER_URL_DOMAIN_PROD = "deschiffresetdeslettres-server.onrender.com"
+        const val SEVER_URL_DOMAIN_TEST = "0.0.0.0:8080" // 10.0.2.2:8080 //for mobile emulator
+
+        val httpUrl
+            get() = "https://${instance?.host}" //if (PROD_ENV) "https://$SEVER_URL_DOMAIN_PROD" else "http://$SEVER_URL_DOMAIN_TEST"
+
+        val wsUrl
+            get() = "wss://${instance?.host}" // if (PROD_ENV) "wss://$SEVER_URL_DOMAIN_PROD" else "ws://$SEVER_URL_DOMAIN_TEST"
+
+    }
+
+
 
     val client = HttpClient {
         install(HttpTimeout) {

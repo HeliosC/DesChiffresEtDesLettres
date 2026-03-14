@@ -1,7 +1,9 @@
 package fr.helios.dcdl
 
 import fr.helios.dcdl.repository.GameRepository
+import fr.helios.dcdl.route.discordRoute
 import fr.helios.dcdl.route.gameRoute
+import fr.helios.dcdl.service.DiscordService
 import fr.helios.dcdl.service.GameService
 import fr.helios.dcdl.websocket.GameUpdateBroadcaster
 import fr.helios.dcdl.websocket.GameWebSocketHandler
@@ -45,6 +47,7 @@ fun Application.module() {
         )
     )
     val gameService = GameService(gameRepository, wsHandler)
+    val discordService = DiscordService()
     wsHandler.setGameService(gameService)
 
     routing {
@@ -53,6 +56,7 @@ fun Application.module() {
         }
 
         gameRoute(gameService)
+        discordRoute(discordService)
         wsHandler.webSocketRoutes(this)
     }
 }
