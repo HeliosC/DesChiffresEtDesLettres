@@ -1,7 +1,9 @@
 package fr.helios.dcdl
 
 import fr.helios.dcdl.repository.GameRepository
+import fr.helios.dcdl.route.discordRoute
 import fr.helios.dcdl.route.gameRoute
+import fr.helios.dcdl.service.DiscordService
 import fr.helios.dcdl.service.GameService
 import fr.helios.dcdl.websocket.GameUpdateBroadcaster
 import fr.helios.dcdl.websocket.GameWebSocketHandler
@@ -10,6 +12,7 @@ import io.ktor.serialization.kotlinx.KotlinxWebsocketSerializationConverter
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
+import io.ktor.server.http.content.staticFiles
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
@@ -19,6 +22,7 @@ import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
 import kotlinx.serialization.json.Json
+import java.io.File
 import kotlin.time.Duration.Companion.seconds
 
 fun main() {
@@ -45,14 +49,20 @@ fun Application.module() {
         )
     )
     val gameService = GameService(gameRepository, wsHandler)
+    val discordService = DiscordService()
     wsHandler.setGameService(gameService)
 
     routing {
-        get("/") {
+        staticFiles("/", File("build/dist/js/developmentExecutable"))
+        staticFiles("/termsOfService", File("src/main/kotlin/fr/helios/dcdl/pages/TermsOfService.html"))
+        staticFiles("/privacyPolicy", File("src/main/kotlin/fr/helios/dcdl/pages/PrivacyPolicy.html"))
+
+        get("/home") {
             call.respondText("Ktor: ${Greeting().greet()}")
         }
 
         gameRoute(gameService)
+        discordRoute(discordService)
         wsHandler.webSocketRoutes(this)
     }
 }

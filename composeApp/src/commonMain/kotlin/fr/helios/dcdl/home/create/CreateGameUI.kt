@@ -2,7 +2,6 @@ package fr.helios.dcdl.home.create
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -13,6 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
+import fr.helios.dcdl.MAX_CUSTOM_ID_LENGTH
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Preview
@@ -29,7 +29,12 @@ fun CreateGameUI(
 
         TextField(
             state = createGameIdState,
-            label = { Text("Game ID") }
+            label = { Text("Game ID") },
+            inputTransformation = {
+                if (this.length > MAX_CUSTOM_ID_LENGTH) {
+                    this.revertAllChanges()
+                }
+            }
         )
 
         Button(onClick = {

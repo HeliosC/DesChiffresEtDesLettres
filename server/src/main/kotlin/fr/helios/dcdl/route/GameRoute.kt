@@ -1,11 +1,14 @@
 package fr.helios.dcdl.route
 
+import fr.helios.dcdl.dto.DiscordTokenRequest
+import fr.helios.dcdl.dto.DiscordTokenResponse
 import fr.helios.dcdl.dto.GameCreateRequest
 import fr.helios.dcdl.dto.GameCreateResponse
 import fr.helios.dcdl.dto.GameJoinRequest
 import fr.helios.dcdl.dto.GameJoinResponse
 import fr.helios.dcdl.dto.GameStartRoundRequest
 import fr.helios.dcdl.dto.GameStartRoundResponse
+import fr.helios.dcdl.service.DiscordService
 import fr.helios.dcdl.service.GameService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
@@ -18,12 +21,12 @@ import io.ktor.server.routing.route
 import io.ktor.server.util.getOrFail
 
 fun Route.gameRoute(
-    gameService: GameService
+    gameService: GameService,
 ) {
     route("/api/games") {
         post("/create") {
             val request = call.receive<GameCreateRequest>()
-            val result = gameService.createGame(request.gameId)
+            val result = gameService.createGame(gameId = request.gameId, adminId = request.adminId)
             call.handleResponse(result) { data ->
                 GameCreateResponse(data)
             }
@@ -32,15 +35,31 @@ fun Route.gameRoute(
         post("/join") {
             try {
                 val request = call.receive<GameJoinRequest>()
-                val result = gameService.joinGame(gameId = request.gameId, username = request.username)
+                val result = gameService.joinGame(gameId = request.gameId, userId = request.userId, username = request.username)
 
                 call.handleResponse(
                     result,
                 ) { data ->
-                    GameJoinResponse(data, request.username)
+                    GameJoinResponse(game = data)
                 }
             } catch (e: Exception) {
                 println("GAMEROUTE /JOIN ERROR : $e")
+                call.respond(HttpStatusCode.InternalServerError)
+            }
+        }
+
+        post("/joinOrCreate") {
+            try {
+                val request = call.receive<GameJoinRequest>()
+                val result = gameService.getAndCreateGameIfNeeded(gameId = request.gameId, userId = request.userId, username = request.username)
+
+                call.handleResponse(
+                    result,
+                ) { data ->
+                    GameJoinResponse(game = data)
+                }
+            } catch (e: Exception) {
+                println("GAMEROUTE /joinOrCreate ERROR : $e")
                 call.respond(HttpStatusCode.InternalServerError)
             }
         }
@@ -72,19 +91,5 @@ fun Route.gameRoute(
                 call.respond(HttpStatusCode.InternalServerError)
             }
         }
-    }
-}
-
-suspend fun <T> RoutingCall.handleResponse(
-    result: Result<T>,
-    successCallback: suspend ((T) -> Unit) = {},
-    createResponse: (T) -> Any
-) {
-    if (result.isSuccess) {
-        val data = result.getOrThrow()
-        this.respond(createResponse.invoke(data))
-        successCallback.invoke(data)
-    } else {
-        this.respond(HttpStatusCode.BadRequest, result.exceptionOrNull()?.message ?: "Error")
     }
 }

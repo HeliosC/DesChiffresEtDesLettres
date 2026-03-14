@@ -14,6 +14,7 @@ import fr.helios.dcdl.dashboard.DashboardScreen
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import fr.helios.dcdl.game.GameScreen
 import fr.helios.dcdl.home.HomeScreen
+import fr.helios.dcdl.model.PlayerUI
 import fr.helios.dcdl.navigation.AppRoutes
 
 @Composable
@@ -64,7 +65,8 @@ fun App(
             ) { navBackStackEntry ->
                 val gameId: String = navBackStackEntry.savedStateHandle[AppRoutes.GAME_ID_ARG] ?: return@composable
                 val username: String = navBackStackEntry.savedStateHandle[AppRoutes.USERNAME_ARG] ?: return@composable
-                GameScreen(gameId = gameId, username = username)
+                val player = PlayerUI(id = username, username = username)
+                GameScreen(gameId = gameId, player = player)
             }
         }
    }

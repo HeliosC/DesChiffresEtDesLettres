@@ -10,6 +10,7 @@ data class Game(
     val id: String,
     val state: GameState = GameState.WAITING,
     val players: List<Player> = emptyList(),
+    val adminId: String,
     val currentRound: GameRound? = null,
     val rounds: List<GameRound> = listOf()
 )
@@ -21,6 +22,7 @@ enum class GameState {
 
 @Serializable
 data class Player(
+    val userId: String,
     val username: String,
     val score: Int = 0
 )
@@ -29,7 +31,7 @@ data class Player(
 sealed interface GameRound {
     val data: GameRoundData
     val startTime: Long
-    /** Username - Answer */
+    /** UserId - Answer */
     val answers: Map<String, RoundAnswer>
 
     @Serializable
@@ -80,4 +82,3 @@ enum class GameRoundType(val duration: Long) {
     NUMBERS(NumbersRules.ROUND_TIME),
     LETTERS(LettersRules.ROUND_TIME)
 }
-

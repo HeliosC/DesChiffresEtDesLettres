@@ -1,7 +1,7 @@
 package fr.helios.dcdl.rules
 
 object NumbersRules {
-    const val ROUND_TIME = 40_000L
+    const val ROUND_TIME = 60_000L
 
     object Objective {
         const val MIN = 101

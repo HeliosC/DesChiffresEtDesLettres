@@ -29,13 +29,14 @@ import fr.helios.dcdl.game.numbers.NumberTitleComponent
 import fr.helios.dcdl.model.GameRoundData
 import fr.helios.dcdl.model.GameRoundType
 import fr.helios.dcdl.model.PlayerType
+import fr.helios.dcdl.model.PlayerUI
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Preview
 @Composable
 fun DashboardScreen(
     gameId: String,
-    gameViewModel: GameViewModel = viewModel { GameViewModel(gameId, PlayerType.Admin) },
+    gameViewModel: GameViewModel = viewModel { GameViewModel(gameId, PlayerType.Admin(gameId)) },
     dashboardViewModel: DashboardViewModel = viewModel { DashboardViewModel(gameId) }
 ) {
     val gameUiState by gameViewModel.uiState.collectAsState()

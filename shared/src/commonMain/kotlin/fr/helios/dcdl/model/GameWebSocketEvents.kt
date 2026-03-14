@@ -10,8 +10,7 @@ data class ClientWsMessage(
 @Serializable
 sealed interface ClientWsMessageData {
     @Serializable
-    data class SubmitResponse(
-        val username: String,
+    data class SubmitAnswer(
         val answer: RoundAnswer?
     ): ClientWsMessageData
 }

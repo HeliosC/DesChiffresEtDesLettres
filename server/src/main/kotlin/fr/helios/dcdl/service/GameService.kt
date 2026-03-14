@@ -17,14 +17,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 interface IGameService {
-    fun createGame(gameId: String): Result<Game>
+    fun createGame(gameId: String, adminId: String): Result<Game>
     suspend fun startRound(gameId: String, roundType: GameRoundType): Result<Game>
     //fun startGame()
-    //fun deleteGame()
 
-    suspend fun joinGame(gameId: String, username: String): Result<Game>
+    suspend fun joinGame(gameId: String, userId: String, username: String): Result<Game>
+    suspend fun getAndCreateGameIfNeeded(gameId: String, userId: String, username: String): Result<Game>
     fun getGame(gameId: String): Game?
-    fun submitResponse(gameId: String, username: String, answer: RoundAnswer?): Result<Game>
+    fun submitResponse(gameId: String, userId: String, answer: RoundAnswer?): Result<Game>
+    fun setAdmin(gameId: String, newAdminId: String): Result<Game>
+    fun deleteGame(gameId: String): Result<Game?>
 }
 
 class GameService(
@@ -38,7 +40,7 @@ class GameService(
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val activeTimers = mutableMapOf<String, Job>()
 
-    override fun createGame(gameId: String): Result<Game> {
+    override fun createGame(gameId: String, adminId: String): Result<Game> {
         if (gameId.isBlank()) {
             return Result.failure(IllegalArgumentException("GameId is empty"))
         }
@@ -47,17 +49,19 @@ class GameService(
             return Result.failure(IllegalStateException("This game already exists"))
         }
 
-        val game = gameRepository.createGame(gameId)
+        val game = gameRepository.createGame(gameId = gameId, adminId = adminId)
         return Result.success(game)
     }
 
-    override suspend fun joinGame(gameId: String, username: String): Result<Game> {
-        if (username.isBlank()) {
-            return Result.failure(IllegalArgumentException("Username is empty"))
+    override suspend fun joinGame(gameId: String, userId: String, username: String): Result<Game> {
+        if (userId.isBlank()) {
+            return Result.failure(IllegalArgumentException("userId is empty"))
         }
 
-        if (gameRepository.findAllGame().any { it.players.any { player -> player.username == username } }) {
-            return Result.failure(IllegalStateException("This username is already in a game"))
+        if (gameRepository.findAllGame().any {
+            it.players.any { player -> player.userId == userId }
+        }) {
+            return Result.failure(IllegalStateException("This user is already in a game"))
         }
 
         val game = gameRepository.findGameById(gameId)
@@ -67,11 +71,29 @@ class GameService(
             return Result.failure(IllegalStateException("This game has already started"))
         }
 
-        val gameWithPlayer = game.copy(players = game.players + Player(username))
+        val gameWithPlayer = game.copy(players = game.players + Player(userId = userId, username = username))
         gameRepository.saveGame(gameWithPlayer)
         gameUpdateBroadcaster.broadcastGameUpdate(gameId)
 
         return Result.success(gameWithPlayer)
+    }
+
+    override suspend fun getAndCreateGameIfNeeded(gameId: String, userId: String, username: String): Result<Game> {
+        if (gameId.isBlank()) {
+            return Result.failure(IllegalArgumentException("GameId is empty"))
+        }
+
+        val game = getGame(gameId)
+        if (game == null) {
+            val newGame = gameRepository.createGame(gameId = gameId, adminId = userId)
+            return joinGame(gameId = newGame.id, userId = userId, username = username)
+        } else {
+            return if (game.players.any { it.userId == userId }) {
+                Result.success(game)
+            } else {
+                joinGame(gameId = gameId, userId = userId, username = username)
+            }
+        }
     }
 
     override fun getGame(gameId: String): Game? {
@@ -130,7 +152,7 @@ class GameService(
         gameUpdateBroadcaster.broadcastGameUpdate(gameId)
     }
 
-    override fun submitResponse(gameId: String, username: String, answer: RoundAnswer?): Result<Game> {
+    override fun submitResponse(gameId: String, userId: String, answer: RoundAnswer?): Result<Game> {
         val game = gameRepository.findGameById(gameId) ?: return Result.failure(IllegalStateException("Game not found"))
         val currentRound = game.currentRound ?: return Result.failure(IllegalStateException("No round ongoing"))
 
@@ -142,13 +164,13 @@ class GameService(
             is GameRound.Numbers -> {
                 if (answer !is RoundAnswer.Numbers) return Result.failure(IllegalStateException("Wrong answer type"))
 
-                val updatedAnswers = currentRound.answers + (username to answer)
+                val updatedAnswers = currentRound.answers + (userId to answer)
                 currentRound.copy(answers = updatedAnswers)
             }
             is GameRound.Letters -> {
                 if (answer !is RoundAnswer.Letters) return Result.failure(IllegalStateException("Wrong answer type"))
 
-                val updatedAnswers = currentRound.answers + (username to answer)
+                val updatedAnswers = currentRound.answers + (userId to answer)
                 currentRound.copy(answers = updatedAnswers)
             }
         }
@@ -157,5 +179,27 @@ class GameService(
         gameRepository.saveGame(updatedGame)
 
         return Result.success(updatedGame)
+    }
+
+    override fun setAdmin(gameId: String, newAdminId: String): Result<Game> {
+        if (newAdminId.isBlank()) {
+            return Result.failure(IllegalArgumentException("newAdminId is empty"))
+        }
+
+        val game = gameRepository.findGameById(gameId)
+            ?: return Result.failure(IllegalStateException("This game doesn't exists"))
+
+        val updatedGame = game.copy(adminId = newAdminId)
+        gameRepository.saveGame(updatedGame)
+
+        return Result.success(updatedGame)
+    }
+
+    override fun deleteGame(gameId: String): Result<Game?> {
+        if (gameId.isBlank()) {
+            return Result.failure(IllegalArgumentException("GameId is empty"))
+        }
+
+        return Result.success(gameRepository.deleteGame(gameId))
     }
 }

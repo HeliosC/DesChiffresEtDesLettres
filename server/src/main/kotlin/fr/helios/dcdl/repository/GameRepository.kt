@@ -3,7 +3,7 @@ package fr.helios.dcdl.repository
 import fr.helios.dcdl.model.Game
 
 interface IGameRepository {
-    fun createGame(gameId: String): Game
+    fun createGame(gameId: String, adminId: String): Game
     fun saveGame(game: Game)
     fun deleteGame(gameId: String): Game?
 
@@ -14,8 +14,8 @@ interface IGameRepository {
 class GameRepository: IGameRepository {
     private val games = mutableMapOf<String, Game>()
 
-    override fun createGame(gameId: String): Game {
-        val newGame = Game(gameId)
+    override fun createGame(gameId: String, adminId: String): Game {
+        val newGame = Game(id = gameId, adminId = adminId)
         games[gameId] = newGame
         return newGame
     }

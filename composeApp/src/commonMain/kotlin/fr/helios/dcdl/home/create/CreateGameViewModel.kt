@@ -2,9 +2,11 @@ package fr.helios.dcdl.home.create
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import fr.helios.dcdl.MAX_CUSTOM_ID_LENGTH
 import fr.helios.dcdl.dto.GameCreateResponse
 import fr.helios.dcdl.network.GameApi
 import io.ktor.client.call.body
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,6 +17,16 @@ class CreateGameViewModel: ViewModel() {
     val uiState = _uiState.asStateFlow()
 
     fun createGame(gameId: String) {
+        if (gameId.length > MAX_CUSTOM_ID_LENGTH) {
+            _uiState.value = CreateGameUiState(
+                isLoading = false,
+                error = "10 char max",
+                successOrNull = null
+            )
+
+            return
+        }
+
         _uiState.value = CreateGameUiState(
             isLoading = true,
             error = null,
@@ -22,7 +34,7 @@ class CreateGameViewModel: ViewModel() {
         )
 
         viewModelScope.launch {
-            val response = GameApi.create(gameId)
+            val response = GameApi.create(gameId = gameId, adminId = gameId)
 
             try {
                 val data = response.body<GameCreateResponse>()

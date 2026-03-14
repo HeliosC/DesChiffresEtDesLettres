@@ -11,13 +11,15 @@ import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.utils.io.InternalAPI
 
 object GameApi {
     //admin
-    suspend fun create(gameId: String) =
+    @OptIn(InternalAPI::class)
+    suspend fun create(gameId: String, adminId: String) =
         ApiClient.client.post("/api/games/create") {
             header("Content-Type", "application/json")
-            setBody(GameCreateRequest(gameId = gameId))
+            setBody(GameCreateRequest(gameId = gameId, adminId = adminId))
         }
 
     suspend fun start(id: String) {}
@@ -29,10 +31,16 @@ object GameApi {
         }
 
     //player
-    suspend fun join(gameId: String, username: String) =
+    suspend fun join(gameId: String, userId: String, username: String) =
         ApiClient.client.post("/api/games/join") {
             header("Content-Type", "application/json")
-            setBody(GameJoinRequest(gameId = gameId, username = username))
+            setBody(GameJoinRequest(gameId = gameId, userId = userId, username = username))
+        }
+
+    suspend fun joinOrCreate(gameId: String, userId: String, username: String) =
+        ApiClient.client.post("/api/games/joinOrCreate") {
+            header("Content-Type", "application/json")
+            setBody(GameJoinRequest(gameId = gameId, userId = userId, username = username))
         }
 
     suspend fun submit(id: String) {}
@@ -40,11 +48,12 @@ object GameApi {
     //ws
     suspend fun connectToWebSocket(
         gameId: String,
+        playerId: String,
         onSessionCreated: (DefaultClientWebSocketSession) -> Unit,
         onSessionEnded: (DefaultClientWebSocketSession) -> Unit,
         onUpdateReceived: (Game) -> Unit
     ) {
-        ApiClient.client.webSocket("${ApiClient.wsUrl}/ws/games/$gameId") {
+        ApiClient.client.webSocket("${ApiClient.wsUrl}/ws/game/$gameId/player/$playerId") {
             onSessionCreated.invoke(this)
 
             try {
