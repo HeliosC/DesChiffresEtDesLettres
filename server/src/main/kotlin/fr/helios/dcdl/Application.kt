@@ -53,7 +53,7 @@ fun Application.module() {
     wsHandler.setGameService(gameService)
 
     routing {
-        //staticFiles("/", File("build/dist/js/developmentExecutable"))
+        staticFiles("/", File("build/dist/js/developmentExecutable"))
         staticFiles("/termsOfService", File("src/main/kotlin/fr/helios/dcdl/pages/TermsOfService.html"))
         staticFiles("/privacyPolicy", File("src/main/kotlin/fr/helios/dcdl/pages/PrivacyPolicy.html"))
 
