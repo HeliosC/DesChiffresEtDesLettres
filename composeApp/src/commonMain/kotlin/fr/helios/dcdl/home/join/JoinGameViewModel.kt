@@ -2,7 +2,9 @@ package fr.helios.dcdl.home.join
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import fr.helios.dcdl.MAX_CUSTOM_ID_LENGTH
 import fr.helios.dcdl.dto.GameJoinResponse
+import fr.helios.dcdl.home.create.CreateGameUiState
 import fr.helios.dcdl.network.GameApi
 import io.ktor.client.call.body
 import io.ktor.client.statement.bodyAsText
@@ -14,7 +16,17 @@ class JoinGameViewModel: ViewModel() {
     private val _uiState = MutableStateFlow(JoinGameUiState())
     val uiState = _uiState.asStateFlow()
 
-    fun joinGame(gameId: String, username: String) {
+    fun joinGame(gameId: String, userId: String, username: String) {
+        if (userId.length > MAX_CUSTOM_ID_LENGTH) {
+            _uiState.value = JoinGameUiState(
+                isLoading = false,
+                error = "10 char max",
+                successOrNull = null
+            )
+
+            return
+        }
+
         _uiState.value = JoinGameUiState(
             isLoading = true,
             error = null,
@@ -22,7 +34,7 @@ class JoinGameViewModel: ViewModel() {
         )
 
         viewModelScope.launch {
-            val response = GameApi.join(gameId = gameId, username = username)
+            val response = GameApi.join(gameId = gameId, userId = userId, username = username)
 
             try {
                 val data = response.body<GameJoinResponse>()
@@ -32,7 +44,7 @@ class JoinGameViewModel: ViewModel() {
                     error = null,
                     successOrNull = JoinGameUiSuccess(
                         joinedGameId = data.game.id,
-                        username = data.username
+                        username = username
                     )
                 )
             } catch (e: Exception) {

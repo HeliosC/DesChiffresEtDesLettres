@@ -39,7 +39,7 @@ fun JoinGameUI(
         )
 
         Button(onClick = {
-            viewModel.joinGame(gameId = joinGameIdState.text.toString(), username = joinUsernameState.text.toString())
+            viewModel.joinGame(gameId = joinGameIdState.text.toString(), userId = joinUsernameState.text.toString(), username = joinUsernameState.text.toString())
         }) {
             Text("Join !")
         }
