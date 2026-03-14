@@ -50,6 +50,7 @@ class GameViewModel(
         viewModelScope.launch {
             GameApi.connectToWebSocket(
                 gameId,
+                player.id,
                 onSessionCreated = { wsSession = it },
                 onSessionEnded = { wsSession = null }
             ) { game ->
@@ -96,15 +97,14 @@ class GameViewModel(
         listener?.let { listener ->
 
             viewModelScope.launch {
-                val message = ClientWsMessageData.SubmitResponse(
-                    username = player.username,
+                val message = ClientWsMessageData.SubmitAnswer(
                     answer = listener.getAnswer()
                 )
 
                 try {
                     wsSession?.sendSerialized(ClientWsMessage(message))
                 } catch (e: Exception) {
-                    println("ERROR submitAnswer ${player.username} - $e")
+                    println("ERROR submitAnswer ${player.id} - $e")
                     //TODO: submit error (UI)
                 }
             }
@@ -115,12 +115,16 @@ class GameViewModel(
 //TODO: handleError with interface
 data class GameUiState(
     val state: GameState = GameState.WAITING,
-    val players: List<Player> = emptyList(),
-    val currentRound: GameRound? = null
+    val players: Map<String, Player> = emptyMap(),
+    val adminId: String? = null,
+    val currentRound: GameRound? = null,
+    val rounds: List<GameRound> = listOf()
 ) {
     constructor(fromApi: Game): this(
         state = fromApi.state,
-        players = fromApi.players,
-        currentRound = fromApi.currentRound
+        players = fromApi.players.associateBy { it.userId },
+        adminId = fromApi.adminId,
+        currentRound = fromApi.currentRound,
+        rounds = fromApi.rounds
     )
 }

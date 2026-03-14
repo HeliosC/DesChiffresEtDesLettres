@@ -20,7 +20,7 @@ object NumberUtil {
 
     fun updateScore(roundData: GameRoundData.Numbers, players: List<Player>, answers: Map<String, RoundAnswer.Numbers>): List<Player> {
         val diffs = answers.mapValues { (_, answer) -> abs(roundData.objective - answer.result) }
-        val bestDiff = diffs.minOf { it.value }
+        val bestDiff = diffs.minOfOrNull { it.value } ?: 0
 
         val score = if (bestDiff == 0) {
             NumbersRules.Score.EXACT
@@ -31,7 +31,7 @@ object NumberUtil {
         val playerWhoScored =  diffs.filter { it.value == bestDiff }.keys
         return players.map { player ->
             player.copy(
-                score = if (player.username in playerWhoScored) {
+                score = if (player.userId in playerWhoScored) {
                     player.score + score
                 } else {
                     player.score
