@@ -24,7 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,7 +31,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.window.core.layout.WindowSizeClass
 import fr.helios.dcdl.dashboard.DashboardUiState
 import fr.helios.dcdl.dashboard.DashboardViewModel
+import fr.helios.dcdl.game.letters.LetterState
+import fr.helios.dcdl.game.letters.LetterTitleComponent
 import fr.helios.dcdl.game.numbers.NumberObjectiveComponent
+import fr.helios.dcdl.game.letters.LettersRoundComponent
+import fr.helios.dcdl.game.letters.LettersRoundListener
+import fr.helios.dcdl.game.letters.LettersRoundViewModel
 import fr.helios.dcdl.game.numbers.NumberRoundComponent
 import fr.helios.dcdl.game.numbers.NumberRoundListener
 import fr.helios.dcdl.game.numbers.NumberRoundViewModel
@@ -47,7 +51,6 @@ import fr.helios.dcdl.model.Player
 import fr.helios.dcdl.model.PlayerUI
 import fr.helios.dcdl.model.RoundAnswer
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import kotlin.math.round
 
 @Preview
 @Composable
@@ -72,13 +75,14 @@ fun GameScreen(
     }
 
     val numberViewModel: NumberRoundViewModel = viewModel { NumberRoundViewModel() }
+    val lettersViewModel: LettersRoundViewModel = viewModel { LettersRoundViewModel() }
 
     LaunchedEffect(gameUiState.currentRound?.data) {
         answer = null
 
         when (val roundData = gameUiState.currentRound?.data) {
             is GameRoundData.Numbers -> numberViewModel.initWithRoundData(roundData)
-            is GameRoundData.Letters -> TODO()
+            is GameRoundData.Letters -> lettersViewModel.initWithRoundData(roundData)
             null -> {}
         }
     }
@@ -108,7 +112,8 @@ fun GameScreen(
                         roundHistory = gameUiState.rounds,
                         players = gameUiState.players,
                         timer = timer,
-                        numberViewModel = numberViewModel
+                        numberViewModel = numberViewModel,
+                        lettersViewModel = lettersViewModel
                     ) { answer = it }
                 }
             }
@@ -123,7 +128,8 @@ fun GameScreen(
                         roundHistory = gameUiState.rounds,
                         players = gameUiState.players,
                         timer = timer,
-                        numberViewModel = numberViewModel
+                        numberViewModel = numberViewModel,
+                        lettersViewModel = lettersViewModel
                     ) { answer = it }
                 }
             }
@@ -146,6 +152,15 @@ fun DashboardActionsComponent(
             }
         ) {
             Text("Lancer Round Chiffres")
+        }
+
+        Button(
+            enabled = !dashboardUiState.isLoading,
+            onClick = {
+                startRound(GameRoundType.LETTERS)
+            }
+        ) {
+            Text("Lancer Round Lettres")
         }
 
         if (dashboardUiState.isLoading) {
@@ -171,6 +186,7 @@ fun RoundScoresComponent(
                 text = "Résultats du round",
                 fontSize = 25.sp
             )
+            Spacer(Modifier.height(25.dp))
         }
 
         when (previousRound) {
@@ -190,28 +206,58 @@ fun RoundScoresComponent(
                 previousRound.answers
                     .toList()
                     .sortedBy { players.keys.indexOf(it.first) }
-                    .forEach{ (playerId, answer) ->
+                    .forEach { (playerId, answer) ->
+                        Spacer(Modifier.height(50.dp))
 
-                    Spacer(Modifier.height(50.dp))
+                        val player = players[playerId] ?: return@forEach
 
-                    val player = players[playerId] ?: return@forEach
+                        Text(
+                            text = "${player.username} : ${answer.result}",
+                            fontSize = 25.sp
+                        )
 
-                    Text(
-                        text = "${player.username} : ${answer.result}",
-                        fontSize = 25.sp
-                    )
+                        answer.operation.forEach { operation ->
+                            ResultOperationNumberComponent(
+                                modifier = Modifier.align(Alignment.Start).height(50.dp),
+                                operation = operation
+                            )
+                        }
+                    }
+            }
+            is GameRound.Letters -> {
+                Text(
+                    "Tirage",
+                    fontSize = 32.sp
+                )
 
-                    answer.operation.forEach { operation ->
-                        ResultOperationNumberComponent(
-                            modifier = Modifier.align(Alignment.Start).height(50.dp),
-                            operation = operation
+                Row {
+                    previousRound.data.tiles.forEach { tile ->
+                        LetterTitleComponent(
+                            modifier = { width(50.dp) },
+                            onGloballyPositioned = {},
+                            value = tile,
+                            state = LetterState.IDLE,
+                            dragEvents = null,
+                            onClick = {}
+                        )
+                    }
+                }
+
+                previousRound.answers
+                    .toList()
+                    .sortedBy { players.keys.indexOf(it.first) }
+                    .forEach { (playerId, answer) ->
+                        Spacer(Modifier.height(25.dp))
+
+                        val player = players[playerId] ?: return@forEach
+
+                        Text(
+                            text = "${player.username} : ${answer.word}",
+                            fontSize = 25.sp
                         )
                     }
 
-                    Spacer(Modifier.height(50.dp))
-                }
             }
-            is GameRound.Letters -> TODO()
             null -> {
                 Text("La partie va commencer")
             }
@@ -267,6 +313,7 @@ fun PlayerRoundComponent(
     players: Map<String, Player>,
     timer: Long,
     numberViewModel: NumberRoundViewModel,
+    lettersViewModel: LettersRoundViewModel,
     onAnswerChanged: (RoundAnswer) -> Unit
 ) {
     Column(modifier = Modifier) {
@@ -279,16 +326,26 @@ fun PlayerRoundComponent(
                 NumberRoundComponent(
                     roundData = currentRound,
                     isInteractive = timer > 0,
-                    listener = object : NumberRoundListener {
+                    listener = remember { object : NumberRoundListener {
                         override fun onPlayerOperationsChanged(operations: List<NumbersOperationUI>) {
                             onAnswerChanged(operations.toAnswer())
                         }
-                    },
-                    numberViewModel
+                    } },
+                    numberViewModel = numberViewModel
                 )
             }
 
-            is GameRoundData.Letters -> TODO()
+            is GameRoundData.Letters -> {
+                LettersRoundComponent(
+                    isInteractive = timer > 0,
+                    listener = remember { object: LettersRoundListener {
+                        override fun onPlayerAnswerChanged(answer: String) {
+                            onAnswerChanged(RoundAnswer.Letters(answer))
+                        }
+                    } },
+                    lettersViewModel = lettersViewModel
+                )
+            }
 
             null -> {
                 RoundScoresComponent(

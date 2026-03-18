@@ -22,14 +22,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.window.core.layout.WindowSizeClass
 import fr.helios.dcdl.game.GameUiState
 import fr.helios.dcdl.game.GameViewModel
-import fr.helios.dcdl.game.PlayerRoundComponent
 import fr.helios.dcdl.game.PlayerScoresComponent
+import fr.helios.dcdl.game.letters.LetterState
+import fr.helios.dcdl.game.letters.LetterTitleComponent
 import fr.helios.dcdl.game.numbers.NumberObjectiveComponent
 import fr.helios.dcdl.game.numbers.NumberTitleComponent
 import fr.helios.dcdl.model.GameRoundData
 import fr.helios.dcdl.model.GameRoundType
 import fr.helios.dcdl.model.PlayerType
-import fr.helios.dcdl.model.PlayerUI
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Preview
@@ -78,13 +78,24 @@ fun DashboardRoundComponent(
     startRound: (GameRoundType) -> Unit
 ) {
     Column(modifier = Modifier) {
-        Button(
-            enabled = !dashboardUiState.isLoading,
-            onClick = {
-                startRound(GameRoundType.NUMBERS)
+        Row {
+            Button(
+                enabled = !dashboardUiState.isLoading,
+                onClick = {
+                    startRound(GameRoundType.NUMBERS)
+                }
+            ) {
+                Text("Lancer Round Chiffres")
             }
-        ) {
-            Text("Lancer Round Chiffres")
+
+            Button(
+                enabled = !dashboardUiState.isLoading,
+                onClick = {
+                    startRound(GameRoundType.LETTERS)
+                }
+            ) {
+                Text("Lancer Round Lettres")
+            }
         }
 
         if (dashboardUiState.isLoading) {
@@ -109,7 +120,20 @@ fun DashboardRoundComponent(
                 }
             }
 
-            is GameRoundData.Letters -> TODO()
+            is GameRoundData.Letters -> {
+                Row(Modifier.fillMaxWidth()) {
+                    round.tiles.forEach { tile ->
+                        LetterTitleComponent(
+                            modifier = { width(50.dp) },
+                            onGloballyPositioned = {},
+                            value = tile,
+                            state = LetterState.IDLE,
+                            dragEvents = null,
+                            onClick = {}
+                        )
+                    }
+                }
+            }
             null -> {}
         }
     }

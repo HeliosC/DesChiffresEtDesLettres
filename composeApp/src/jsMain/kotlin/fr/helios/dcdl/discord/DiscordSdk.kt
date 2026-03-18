@@ -9,7 +9,7 @@ console.log("discordSdk.js - SDK importé");
 
 window.__discordHost = window.location.host
 
-var CLIENT_ID = process.env.DISCORD_CLIENT_ID;
+var CLIENT_ID = "1479258181107449987";
 var discordSdk = new DiscordSDK(CLIENT_ID);
 var auth = undefined
 
