@@ -33,14 +33,13 @@ class ApiClient private constructor(private val host: String) {
 
         //TODO: dynamic url for dev
         const val SEVER_URL_DOMAIN_PROD = "deschiffresetdeslettres-server.onrender.com"
-        const val SEVER_URL_DOMAIN_TEST = "0.0.0.0:8080" // 10.0.2.2:8080 //for mobile emulator
+        const val SEVER_URL_DOMAIN_TEST = "127.0.0.1:8080" // 10.0.2.2:8080 //for mobile emulator
 
         val httpUrl
-            get() = "https://${instance?.host}" //if (PROD_ENV) "https://$SEVER_URL_DOMAIN_PROD" else "http://$SEVER_URL_DOMAIN_TEST"
+            get() = (if (PROD_ENV) "https" else "http") + "://${instance?.host}" //if (PROD_ENV) "https://$SEVER_URL_DOMAIN_PROD" else "http://$SEVER_URL_DOMAIN_TEST"
 
         val wsUrl
-            get() = "wss://${instance?.host}" // if (PROD_ENV) "wss://$SEVER_URL_DOMAIN_PROD" else "ws://$SEVER_URL_DOMAIN_TEST"
-
+            get() = (if (PROD_ENV) "wss" else "ws") + "://${instance?.host}" // if (PROD_ENV) "wss://$SEVER_URL_DOMAIN_PROD" else "ws://$SEVER_URL_DOMAIN_TEST"
     }
 
 

@@ -32,4 +32,6 @@ dependencies {
 
     testImplementation(libs.ktor.serverTestHost)
     testImplementation(libs.kotlin.testJunit)
+
+    implementation(libs.slf4j.simple)
 }
