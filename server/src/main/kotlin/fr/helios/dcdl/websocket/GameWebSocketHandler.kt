@@ -45,10 +45,18 @@ class GameWebSocketHandler(private var gameService: GameService): GameUpdateBroa
 
                     when (val data = receivedData.data) {
                         is ClientWsMessageData.SubmitAnswer -> {
-                            gameService.submitResponse(
+                            gameService.submitAnswer(
                                 gameId = gameId,
                                 userId = playerId,
                                 answer = data.answer
+                            )
+                        }
+
+                        is ClientWsMessageData.AcceptAnswer -> {
+                            gameService.acceptAnswer(
+                                gameId = gameId,
+                                userId = data.playerId,
+                                accept = data.acceptAnswer
                             )
                         }
                     }

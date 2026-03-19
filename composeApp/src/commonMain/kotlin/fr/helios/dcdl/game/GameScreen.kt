@@ -4,12 +4,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -50,7 +51,6 @@ import fr.helios.dcdl.model.GameRoundType
 import fr.helios.dcdl.model.NumbersOperation
 import fr.helios.dcdl.model.Player
 import fr.helios.dcdl.model.PlayerUI
-import fr.helios.dcdl.model.RoundAnswer
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Preview
@@ -114,8 +114,11 @@ fun GameScreen(
                         players = gameUiState.players,
                         timer = timer,
                         numberViewModel = numberViewModel,
-                        lettersViewModel = lettersViewModel
-                    ) { answer = it }
+                        lettersViewModel = lettersViewModel,
+                        onAnswerChanged = { answer = it },
+                        isAdmin = isAdmin,
+                        onAdminAcceptAnswer = { playerId, accept -> gameViewModel.acceptAnswer(playerId, accept) }
+                    )
                 }
             }
 
@@ -130,8 +133,11 @@ fun GameScreen(
                         players = gameUiState.players,
                         timer = timer,
                         numberViewModel = numberViewModel,
-                        lettersViewModel = lettersViewModel
-                    ) { answer = it }
+                        lettersViewModel = lettersViewModel,
+                        onAnswerChanged = { answer = it },
+                        isAdmin = isAdmin,
+                        onAdminAcceptAnswer = { playerId, accept -> gameViewModel.acceptAnswer(playerId, accept) }
+                    )
                 }
             }
         }
@@ -174,9 +180,11 @@ fun DashboardActionsComponent(
 }
 
 @Composable
-fun RoundScoresComponent(
+fun RoundResultsComponent(
     previousRound: GameRound?,
-    players: Map<String, Player>
+    players: Map<String, Player>,
+    isAdmin: Boolean,
+    onAdminAcceptAnswer: (String, Boolean) -> Unit
 ) {
     Column(
         modifier = Modifier,
@@ -252,10 +260,20 @@ fun RoundScoresComponent(
 
                         val player = players[playerId] ?: return@forEach
 
-                        Text(
-                            text = "${player.username} : ${answer.word}",
-                            fontSize = 25.sp
-                        )
+                        Row {
+                            Text(
+                                text = "${player.username} : ${answer.word}",
+                                fontSize = 25.sp,
+                                textDecoration = if (answer.score == 0) TextDecoration.LineThrough else null
+                            )
+
+                            if (isAdmin) {
+                                Checkbox(
+                                    checked = answer.score != 0,
+                                    onCheckedChange = { onAdminAcceptAnswer.invoke(playerId, it) }
+                                )
+                            }
+                        }
                     }
 
             }
@@ -315,7 +333,9 @@ fun PlayerRoundComponent(
     timer: Long,
     numberViewModel: NumberRoundViewModel,
     lettersViewModel: LettersRoundViewModel,
-    onAnswerChanged: (ClientRoundAnswer) -> Unit
+    onAnswerChanged: (ClientRoundAnswer) -> Unit,
+    isAdmin: Boolean,
+    onAdminAcceptAnswer: (String, Boolean) -> Unit
 ) {
     Column(modifier = Modifier) {
         if (currentRound != null) {
@@ -349,9 +369,11 @@ fun PlayerRoundComponent(
             }
 
             null -> {
-                RoundScoresComponent(
+                RoundResultsComponent(
                     previousRound = roundHistory.lastOrNull(),
-                    players = players
+                    players = players,
+                    isAdmin = isAdmin,
+                    onAdminAcceptAnswer = onAdminAcceptAnswer
                 )
             }
         }

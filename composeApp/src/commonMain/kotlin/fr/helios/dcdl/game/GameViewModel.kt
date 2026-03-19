@@ -110,6 +110,22 @@ class GameViewModel(
             }
         }
     }
+
+    fun acceptAnswer(playerId: String, accept: Boolean) {
+        viewModelScope.launch {
+            val message = ClientWsMessageData.AcceptAnswer(
+                playerId = playerId,
+                acceptAnswer = accept
+            )
+
+            try {
+                wsSession?.sendSerialized(ClientWsMessage(message))
+            } catch (e: Exception) {
+                println("ERROR acceptAnswer ${player.id} - $e")
+                //TODO: submit error (UI)
+            }
+        }
+    }
 }
 
 //TODO: handleError with interface

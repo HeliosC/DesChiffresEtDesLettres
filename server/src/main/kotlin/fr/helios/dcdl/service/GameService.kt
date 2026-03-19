@@ -29,8 +29,9 @@ interface IGameService {
     suspend fun joinGame(gameId: String, userId: String, username: String): Result<Game>
     suspend fun getAndCreateGameIfNeeded(gameId: String, userId: String, username: String): Result<Game>
     fun getGame(gameId: String): Game?
-    fun submitResponse(gameId: String, userId: String, answer: ClientRoundAnswer?): Result<Game>
-    fun setAdmin(gameId: String, newAdminId: String): Result<Game>
+    fun submitAnswer(gameId: String, userId: String, answer: ClientRoundAnswer?): Result<Game>
+    suspend fun acceptAnswer(gameId: String, userId: String, accept: Boolean): Result<Game>
+    suspend fun setAdmin(gameId: String, newAdminId: String): Result<Game>
     fun deleteGame(gameId: String): Result<Game?>
 }
 
@@ -159,7 +160,7 @@ class GameService(
         gameUpdateBroadcaster.broadcastGameUpdate(gameId)
     }
 
-    override fun submitResponse(gameId: String, userId: String, answer: ClientRoundAnswer?): Result<Game> {
+    override fun submitAnswer(gameId: String, userId: String, answer: ClientRoundAnswer?): Result<Game> {
         val game = gameRepository.findGameById(gameId) ?: return Result.failure(IllegalStateException("Game not found"))
         val currentRound = game.currentRound ?: return Result.failure(IllegalStateException("No round ongoing"))
 
@@ -206,7 +207,79 @@ class GameService(
         return Result.success(updatedGame)
     }
 
-    override fun setAdmin(gameId: String, newAdminId: String): Result<Game> {
+    override suspend fun acceptAnswer(gameId: String, userId: String, accept: Boolean): Result<Game> {
+        val game = gameRepository.findGameById(gameId)
+            ?: return Result.failure(IllegalStateException("This game doesn't exists"))
+
+        if (game.currentRound != null) {
+            return Result.failure(IllegalStateException("We are currently in a round"))
+        }
+
+        val lastRound = game.rounds.lastOrNull() ?:
+            return Result.failure(IllegalStateException("No rounds in history"))
+
+        val newRound: GameRound = when(lastRound) {
+            is GameRound.Numbers -> {
+                lastRound.copy(answers =
+                    lastRound.answers.toMutableMap().also { answers ->
+                        val answer = answers[userId] ?:
+                            return Result.failure(IllegalStateException("No answers for this player this round"))
+
+                        answers[userId] = answer.copy(
+                            score = if (accept) {
+                                NumbersRules.Score.calculateScore(
+                                    objective = lastRound.data.objective,
+                                    bestPossibleDiff = 0,
+                                    playerResult = answer.result
+                                )
+                            } else {
+                                0
+                            }
+                        )
+                    }
+                )
+            }
+
+            is GameRound.Letters -> {
+                lastRound.copy(answers =
+                    lastRound.answers.toMutableMap().also { answers ->
+                        val answer = answers[userId] ?:
+                            return Result.failure(IllegalStateException("No answers for this player this round"))
+
+                        answers[userId] = answer.copy(
+                            score = if (accept) {
+                                LettersRules.Score.calculateScore(
+                                    word = answer.word
+                                )
+                            } else {
+                                0
+                            }
+                        )
+                    }
+                )
+            }
+        }
+
+        val newRounds = game.rounds.dropLast(1) + newRound
+
+        val totalScore: Map<String, Int> = ScoreUtil.getTotalScore(newRounds)
+        val updatedPlayers = game.players.map { player ->
+            player.copy(
+                score = totalScore[player.userId] ?: 0
+            )
+        }
+
+        val updatedGame = game.copy(
+            players = updatedPlayers,
+            rounds = newRounds
+        )
+        gameRepository.saveGame(updatedGame)
+        gameUpdateBroadcaster.broadcastGameUpdate(gameId)
+
+        return Result.success(updatedGame)
+    }
+
+    override suspend fun setAdmin(gameId: String, newAdminId: String): Result<Game> {
         if (newAdminId.isBlank()) {
             return Result.failure(IllegalArgumentException("newAdminId is empty"))
         }
@@ -216,6 +289,7 @@ class GameService(
 
         val updatedGame = game.copy(adminId = newAdminId)
         gameRepository.saveGame(updatedGame)
+        gameUpdateBroadcaster.broadcastGameUpdate(gameId)
 
         return Result.success(updatedGame)
     }

@@ -13,6 +13,12 @@ sealed interface ClientWsMessageData {
     data class SubmitAnswer(
         val answer: ClientRoundAnswer?
     ): ClientWsMessageData
+
+    @Serializable
+    data class AcceptAnswer(
+        val playerId: String,
+        val acceptAnswer: Boolean
+    ): ClientWsMessageData
 }
 
 @Serializable
