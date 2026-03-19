@@ -1,10 +1,5 @@
 package fr.helios.dcdl.rules
 
-import fr.helios.dcdl.model.GameRoundData
-import fr.helios.dcdl.model.Player
-import fr.helios.dcdl.model.RoundAnswer
-import kotlin.collections.component1
-import kotlin.collections.component2
 import kotlin.math.abs
 import kotlin.math.floor
 
@@ -34,26 +29,22 @@ object NumbersRules {
     object Score {
         const val EXACT = 10
         const val NOT_EXACT = 7
+        const val MAX_DIFF_TO_SCORE_PERCENT = 0.21
 
-        fun calculateScore(roundData: GameRoundData.Numbers, players: List<Player>, answers: Map<String, RoundAnswer.Numbers>): List<Player> {
-            val diffs = answers.mapValues { (_, answer) -> abs(roundData.objective - answer.result) }
-            val bestDiff = diffs.minOfOrNull { it.value } ?: 0
+        fun calculateScore(objective: Int, bestPossibleDiff: Int, playerResult: Int): Int {
+            val playerDiff = abs(objective - playerResult)
 
-            val score = if (bestDiff == 0) {
-                NumbersRules.Score.EXACT
-            } else {
-                NumbersRules.Score.NOT_EXACT
+            if (bestPossibleDiff > playerDiff) {
+                println("ERROR in calculateScore: player diff < best possible diff")
+                return 0
             }
+            val diffFromBest = playerDiff - bestPossibleDiff
 
-            val playerWhoScored =  diffs.filter { it.value == bestDiff }.keys
-            return players.map { player ->
-                player.copy(
-                    score = if (player.userId in playerWhoScored) {
-                        player.score + score
-                    } else {
-                        player.score
-                    }
-                )
+            if (diffFromBest == 0) {
+                return EXACT
+            } else {
+                val pointScale = objective * MAX_DIFF_TO_SCORE_PERCENT / NOT_EXACT
+                return (NOT_EXACT - floor(diffFromBest / pointScale).toInt()).coerceAtLeast(0)
             }
         }
     }
