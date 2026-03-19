@@ -11,6 +11,21 @@ data class ClientWsMessage(
 sealed interface ClientWsMessageData {
     @Serializable
     data class SubmitAnswer(
-        val answer: RoundAnswer?
+        val answer: ClientRoundAnswer?
     ): ClientWsMessageData
+}
+
+@Serializable
+sealed interface ClientRoundAnswer {
+
+    @Serializable
+    data class Numbers(
+        val result: Int,
+        val operation: List<NumbersOperation>
+    ): ClientRoundAnswer
+
+    @Serializable
+    data class Letters(
+        val word: String
+    ): ClientRoundAnswer
 }

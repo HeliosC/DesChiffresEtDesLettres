@@ -1,5 +1,6 @@
 package fr.helios.dcdl.service
 
+import fr.helios.dcdl.model.ClientRoundAnswer
 import fr.helios.dcdl.model.Game
 import fr.helios.dcdl.model.GameRound
 import fr.helios.dcdl.model.GameRoundType
@@ -7,8 +8,11 @@ import fr.helios.dcdl.model.GameState
 import fr.helios.dcdl.model.Player
 import fr.helios.dcdl.model.RoundAnswer
 import fr.helios.dcdl.repository.GameRepository
+import fr.helios.dcdl.rules.LettersRules
+import fr.helios.dcdl.rules.NumbersRules
 import fr.helios.dcdl.util.LettersUtil
 import fr.helios.dcdl.util.NumberUtil
+import fr.helios.dcdl.util.ScoreUtil
 import fr.helios.dcdl.websocket.GameUpdateBroadcaster
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,7 +29,7 @@ interface IGameService {
     suspend fun joinGame(gameId: String, userId: String, username: String): Result<Game>
     suspend fun getAndCreateGameIfNeeded(gameId: String, userId: String, username: String): Result<Game>
     fun getGame(gameId: String): Game?
-    fun submitResponse(gameId: String, userId: String, answer: RoundAnswer?): Result<Game>
+    fun submitResponse(gameId: String, userId: String, answer: ClientRoundAnswer?): Result<Game>
     fun setAdmin(gameId: String, newAdminId: String): Result<Game>
     fun deleteGame(gameId: String): Result<Game?>
 }
@@ -138,16 +142,11 @@ class GameService(
         val game = gameRepository.findGameById(gameId) ?: return
         val currentRound = game.currentRound ?: return
 
-        val updatedPlayers = when (currentRound) {
-            is GameRound.Numbers -> NumberUtil.updateScore(
-                currentRound.data,
-                game.players,
-                currentRound.answers
-            )
-            is GameRound.Letters -> LettersUtil.updateScore(
-                currentRound.data,
-                game.players,
-                currentRound.answers
+        val totalScore: Map<String, Int> = ScoreUtil.getTotalScore(game.rounds + currentRound)
+
+        val updatedPlayers = game.players.map { player ->
+            player.copy(
+                score = totalScore[player.userId] ?: 0
             )
         }
 
@@ -160,7 +159,7 @@ class GameService(
         gameUpdateBroadcaster.broadcastGameUpdate(gameId)
     }
 
-    override fun submitResponse(gameId: String, userId: String, answer: RoundAnswer?): Result<Game> {
+    override fun submitResponse(gameId: String, userId: String, answer: ClientRoundAnswer?): Result<Game> {
         val game = gameRepository.findGameById(gameId) ?: return Result.failure(IllegalStateException("Game not found"))
         val currentRound = game.currentRound ?: return Result.failure(IllegalStateException("No round ongoing"))
 
@@ -170,15 +169,33 @@ class GameService(
 
         val updatedRound = when (currentRound) {
             is GameRound.Numbers -> {
-                if (answer !is RoundAnswer.Numbers) return Result.failure(IllegalStateException("Wrong answer type"))
+                if (answer !is ClientRoundAnswer.Numbers) return Result.failure(IllegalStateException("Wrong answer type"))
 
-                val updatedAnswers = currentRound.answers + (userId to answer)
+                //TODO: calculate bestPossibleDiff
+                val serverAnswer = RoundAnswer.Numbers(
+                    result = answer.result,
+                    operation = answer.operation,
+                    score = NumbersRules.Score.calculateScore(
+                        objective = currentRound.data.objective,
+                        bestPossibleDiff = 0,
+                        playerResult = answer.result
+                    )
+                )
+
+                val updatedAnswers = currentRound.answers + (userId to serverAnswer)
                 currentRound.copy(answers = updatedAnswers)
             }
             is GameRound.Letters -> {
-                if (answer !is RoundAnswer.Letters) return Result.failure(IllegalStateException("Wrong answer type"))
+                if (answer !is ClientRoundAnswer.Letters) return Result.failure(IllegalStateException("Wrong answer type"))
 
-                val updatedAnswers = currentRound.answers + (userId to answer)
+                val serverAnswer = RoundAnswer.Letters(
+                    word = answer.word,
+                    score = LettersRules.Score.calculateScore(
+                        word = answer.word
+                    )
+                )
+
+                val updatedAnswers = currentRound.answers + (userId to serverAnswer)
                 currentRound.copy(answers = updatedAnswers)
             }
         }

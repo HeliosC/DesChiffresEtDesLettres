@@ -66,15 +66,19 @@ sealed class GameRoundData(@SerialName("round_type") val type: GameRoundType) {
 
 @Serializable
 sealed interface RoundAnswer {
+    val score: Int
+
     @Serializable
     data class Numbers(
         val result: Int,
-        val operation: List<NumbersOperation>
+        val operation: List<NumbersOperation>,
+        override val score: Int
     ): RoundAnswer
 
     @Serializable
     data class Letters(
-        val word: String
+        val word: String,
+        override val score: Int
     ): RoundAnswer
 }
 

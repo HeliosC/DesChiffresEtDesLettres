@@ -1,8 +1,8 @@
 package fr.helios.dcdl.game.numbers
 
+import fr.helios.dcdl.model.ClientRoundAnswer
 import fr.helios.dcdl.model.NumbersOperation
 import fr.helios.dcdl.model.NumbersOperator
-import fr.helios.dcdl.model.RoundAnswer
 import fr.helios.dcdl.rules.NumbersRules
 
 data class NumbersTileDataUI(
@@ -17,8 +17,8 @@ data class NumbersOperationUI(
     val isResultUsed: Boolean = false
 ) {
     companion object {
-        fun List<NumbersOperationUI>.toAnswer(): RoundAnswer.Numbers {
-            return RoundAnswer.Numbers(
+        fun List<NumbersOperationUI>.toAnswer(): ClientRoundAnswer.Numbers {
+            return ClientRoundAnswer.Numbers(
                 result = this.findLast { operation ->
                     operation.getResult() != null
                 }?.getResult() ?: 0,

@@ -1,10 +1,7 @@
 package fr.helios.dcdl.util
 
 import fr.helios.dcdl.model.GameRoundData
-import fr.helios.dcdl.model.Player
-import fr.helios.dcdl.model.RoundAnswer
 import fr.helios.dcdl.rules.NumbersRules
-import kotlin.math.abs
 import kotlin.random.Random
 
 object NumberUtil {
@@ -16,27 +13,5 @@ object NumberUtil {
             objective = objective,
             tiles = tiles
         )
-    }
-
-    fun updateScore(roundData: GameRoundData.Numbers, players: List<Player>, answers: Map<String, RoundAnswer.Numbers>): List<Player> {
-        val diffs = answers.mapValues { (_, answer) -> abs(roundData.objective - answer.result) }
-        val bestDiff = diffs.minOfOrNull { it.value } ?: 0
-
-        val score = if (bestDiff == 0) {
-            NumbersRules.Score.EXACT
-        } else {
-            NumbersRules.Score.NOT_EXACT
-        }
-
-        val playerWhoScored =  diffs.filter { it.value == bestDiff }.keys
-        return players.map { player ->
-            player.copy(
-                score = if (player.userId in playerWhoScored) {
-                    player.score + score
-                } else {
-                    player.score
-                }
-            )
-        }
     }
 }

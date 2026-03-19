@@ -43,6 +43,7 @@ import fr.helios.dcdl.game.numbers.NumberRoundViewModel
 import fr.helios.dcdl.game.numbers.NumberTitleComponent
 import fr.helios.dcdl.game.numbers.NumbersOperationUI
 import fr.helios.dcdl.game.numbers.NumbersOperationUI.Companion.toAnswer
+import fr.helios.dcdl.model.ClientRoundAnswer
 import fr.helios.dcdl.model.GameRound
 import fr.helios.dcdl.model.GameRoundData
 import fr.helios.dcdl.model.GameRoundType
@@ -66,11 +67,11 @@ fun GameScreen(
 
     val isAdmin by derivedStateOf { player.id == gameUiState.adminId }
 
-    var answer: RoundAnswer? by remember { mutableStateOf(null) }
+    var answer: ClientRoundAnswer? by remember { mutableStateOf(null) }
 
     LaunchedEffect(Unit) {
         gameViewModel.setListener(object : GameListener {
-            override fun getAnswer(): RoundAnswer? = answer
+            override fun getAnswer(): ClientRoundAnswer? = answer
         })
     }
 
@@ -314,7 +315,7 @@ fun PlayerRoundComponent(
     timer: Long,
     numberViewModel: NumberRoundViewModel,
     lettersViewModel: LettersRoundViewModel,
-    onAnswerChanged: (RoundAnswer) -> Unit
+    onAnswerChanged: (ClientRoundAnswer) -> Unit
 ) {
     Column(modifier = Modifier) {
         if (currentRound != null) {
@@ -340,7 +341,7 @@ fun PlayerRoundComponent(
                     isInteractive = timer > 0,
                     listener = remember { object: LettersRoundListener {
                         override fun onPlayerAnswerChanged(answer: String) {
-                            onAnswerChanged(RoundAnswer.Letters(answer))
+                            onAnswerChanged(ClientRoundAnswer.Letters(answer))
                         }
                     } },
                     lettersViewModel = lettersViewModel

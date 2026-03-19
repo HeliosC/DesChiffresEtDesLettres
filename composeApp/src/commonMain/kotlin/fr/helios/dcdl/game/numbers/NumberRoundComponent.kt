@@ -192,6 +192,9 @@ fun NumberOperatorComponent(
     }
 }
 
+fun Modifier.numberTilesTheme() = this
+    .padding(horizontal = 4.dp)
+
 @Preview
 @Composable
 fun NumberTitlesPreview() {
@@ -202,12 +205,7 @@ fun NumberTitlesPreview() {
         ),
         isInteractive = true,
         listener = object : NumberRoundListener {
-            override fun onPlayerOperationsChanged(operations: List<NumbersOperationUI>) {
-                TODO("Not yet implemented")
-            }
+            override fun onPlayerOperationsChanged(operations: List<NumbersOperationUI>) {}
         }
     )
 }
-
-fun Modifier.numberTilesTheme() = this.
-        padding(horizontal = 4.dp)

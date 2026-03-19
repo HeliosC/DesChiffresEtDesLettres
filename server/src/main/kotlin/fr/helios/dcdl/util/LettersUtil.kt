@@ -1,8 +1,6 @@
 package fr.helios.dcdl.util
 
 import fr.helios.dcdl.model.GameRoundData
-import fr.helios.dcdl.model.Player
-import fr.helios.dcdl.model.RoundAnswer
 import fr.helios.dcdl.rules.LettersRules
 import kotlin.random.Random
 
@@ -16,14 +14,5 @@ object LettersUtil {
         }.shuffled()
 
         return GameRoundData.Letters(tiles)
-    }
-
-    fun updateScore(roundData: GameRoundData.Letters, players: List<Player>, answers: Map<String, RoundAnswer.Letters>): List<Player> {
-        return players.map { player ->
-            val score = answers[player.userId]?.word?.let { LettersRules.getScore(it) } ?: 0
-            player.copy(
-                score = player.score + score
-            )
-        }
     }
 }

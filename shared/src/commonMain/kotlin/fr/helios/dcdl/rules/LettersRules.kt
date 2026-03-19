@@ -13,7 +13,9 @@ object LettersRules {
         const val CONSONANTS = "BCDFGHJKLMNPQRSTVWXYZ"
     }
 
-    fun getScore(word: String): Int {
-        return word.length
+    object Score {
+        fun calculateScore(word: String): Int {
+            return word.length
+        }
     }
 }

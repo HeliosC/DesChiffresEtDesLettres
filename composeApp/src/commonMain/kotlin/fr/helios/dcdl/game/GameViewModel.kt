@@ -2,6 +2,7 @@ package fr.helios.dcdl.game
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import fr.helios.dcdl.model.ClientRoundAnswer
 import fr.helios.dcdl.model.ClientWsMessage
 import fr.helios.dcdl.model.ClientWsMessageData
 import fr.helios.dcdl.model.Game
@@ -9,7 +10,6 @@ import fr.helios.dcdl.model.GameRound
 import fr.helios.dcdl.model.GameState
 import fr.helios.dcdl.model.Player
 import fr.helios.dcdl.model.PlayerType
-import fr.helios.dcdl.model.RoundAnswer
 import fr.helios.dcdl.network.GameApi
 import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.client.plugins.websocket.sendSerialized
@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 import kotlin.time.Clock
 
 interface GameListener {
-    fun getAnswer(): RoundAnswer?
+    fun getAnswer(): ClientRoundAnswer?
 }
 
 class GameViewModel(
